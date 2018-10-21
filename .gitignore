@@ -1,2 +1,8 @@
 # IDE
 .idea/**
+
+# Virtual Env
+venv/**
+
+# Pycache
+**/__pycache__/**
