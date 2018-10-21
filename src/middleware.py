@@ -17,13 +17,31 @@ def aws_api_gateway(
             # Lambda authorizer
             if auth_context_handler:
                 if not isinstance(event, dict):
-                    return auth_context_on_error_handler(NotImplementedError('Middleware only supports event as dict'))
+                    return h.to_response_api_gw(
+                        auth_context_on_error_handler(
+                            NotImplementedError('Middleware only supports event as dict')
+                        )
+                    )
 
                 authorizer_context = (event.get('requestContext') or {}).get('authorizer')
                 try:
                     auth_context_handler(authorizer_context)
+
                 except Exception as e:
-                    return auth_context_on_error_handler(e)
+                    try:
+                        response = h.to_response_api_gw(auth_context_on_error_handler(e))
+
+                    except Exception as e:
+                        response = {
+                            "statusCode": 500,
+                            "body": json.dumps({
+                                "errors": [{
+                                    "message": "Unhandled exception on auth_context_on_error_handler.\n" + str(e)
+                                }]
+                            })
+                        }
+
+                    return response
 
             # Parser
             if payload_parser:
@@ -32,11 +50,25 @@ def aws_api_gateway(
                     event = {**event, "middleware": {"body": payload}}
 
                 except Exception as e:
-                    return payload_parser_on_error_handler(e)
+                    try:
+                        response = h.to_response_api_gw(payload_parser_on_error_handler(e))
+
+                    except Exception as e:
+                        response = {
+                            "statusCode": 500,
+                            "body": json.dumps({
+                                "errors": [{
+                                    "message": "Unhandled exception on payload_parser_on_error_handler.\n" + str(e)
+                                }]
+                            })
+                        }
+
+                    return response
 
             try:
                 response = lambda_handler(event, context)
                 return h.to_response_api_gw(response)
+
             except Exception as e:
                 return {
                     "statusCode": 500,

@@ -198,3 +198,142 @@ def test_7():
     assert_common_conditions(response)
     assert response['statusCode'] == 401
     assert 'Unauthorized' in response['body']
+
+
+def test_8():
+    # given
+    def parser(_):
+        raise Exception("Unhandled exception in parser")
+
+    # and
+    @aws_api_gateway(
+        payload_parser=parser
+    )
+    def any_lambda_handler(_, __):
+        return {
+            "statusCode": 200
+        }
+
+    # when
+    response = any_lambda_handler(dict(), None)
+
+    # then
+    assert_common_conditions(response)
+    assert response['statusCode'] == 400
+    assert 'Bad request' in response['body']
+
+
+def test_9():
+    # given
+    def parser(_):
+        raise Exception()
+
+    def on_error(_):
+        return {
+            "statusCode": 202,
+            "body": {
+                "message": "Accepted"
+            }
+        }
+
+    # and
+    @aws_api_gateway(
+        payload_parser=parser,
+        payload_parser_on_error_handler=on_error
+    )
+    def any_lambda_handler(_, __):
+        return {
+            "statusCode": 200
+        }
+
+    # when
+    response = any_lambda_handler(dict(), None)
+
+    # then
+    assert_common_conditions(response)
+    assert response['statusCode'] == 202
+
+
+def test_10():
+    # given
+    def auth_handler(_):
+        raise Exception()
+
+    def on_error(_):
+        return {
+            "statusCode": 403,
+            "body": {"message": "Forbidden"}
+        }
+
+    # and
+    @aws_api_gateway(
+        auth_context_handler=auth_handler,
+        auth_context_on_error_handler=on_error
+    )
+    def any_lambda_handler(_, __):
+        return {
+            "statusCode": 200
+        }
+
+    # when
+    response = any_lambda_handler(dict(), None)
+
+    # then
+    assert_common_conditions(response)
+    assert response['statusCode'] == 403
+    assert 'Forbidden' in response['body']
+
+
+# exception on error handler
+def test_11():
+    # given
+    def auth_handler(_):
+        raise Exception()
+
+    def on_error(_):
+        raise Exception('Unexpected error on auth error handler')
+
+    # and
+    @aws_api_gateway(
+        auth_context_handler=auth_handler,
+        auth_context_on_error_handler=on_error
+    )
+    def any_lambda_handler(_, __):
+        return {
+            "statusCode": 200
+        }
+
+    # when
+    response = any_lambda_handler(dict(), None)
+
+    # then
+    assert_common_conditions(response)
+    assert response['statusCode'] == 500
+    assert 'Unexpected' in response['body']
+
+
+def test_12():
+    # given
+    def parser(_):
+        raise Exception()
+
+    def on_error(_):
+        raise Exception('Unexpected error on parser error handler')
+
+    # and
+    @aws_api_gateway(
+        payload_parser=parser,
+        payload_parser_on_error_handler=on_error
+    )
+    def any_lambda_handler(_, __):
+        return {
+            "statusCode": 200
+        }
+
+    # when
+    response = any_lambda_handler(dict(), None)
+
+    # then
+    assert_common_conditions(response)
+    assert response['statusCode'] == 500
+    assert 'Unexpected' in response['body']
