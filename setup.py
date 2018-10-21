@@ -7,6 +7,9 @@ config = {
     "url": "https://github.com/augustoerico/aws-api-gw-middleware_py36",
     "description": "AWS API Gateway middleware for custom authorization and payload parser.",
     "classifiers": [],
+    "install_requires": [
+          "simplejson"
+      ],
     "license": "MIT"
 }
 
