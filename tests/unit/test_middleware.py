@@ -53,3 +53,83 @@ def test_should_2():
 
     # and
     assert json.loads(response['body']) == response_body
+
+
+def test_should_3():
+    # given
+    response_body = {
+        "attr1": "value1",
+        "attr2": 123,
+        "attr3": 12.34
+    }
+
+    # and
+    @aws_api_gateway()
+    def any_lambda_handler(_, __):
+        return {
+            "statusCode": 200,
+            "body": json.dumps(response_body)
+        }
+
+    # when
+    response = any_lambda_handler(None, None)
+
+    # then
+    assert_common_conditions(response)
+
+    # and
+    assert json.loads(response['body']) == response_body
+
+
+def test_should_4():
+    from decimal import Decimal
+    # given
+    response_body = {
+        "attr1": "value1",
+        "attr2": Decimal(123),
+        "attr3": Decimal(12.34)
+    }
+
+    # and
+    @aws_api_gateway()
+    def any_lambda_handler(_, __):
+        return {
+            "statusCode": 200,
+            "body": json.dumps(response_body)
+        }
+
+    # when
+    response = any_lambda_handler(None, None)
+
+    # then
+    assert_common_conditions(response)
+
+    # and
+    rsp_body = json.loads(response['body'])
+    assert rsp_body.get('errors') and isinstance(rsp_body['errors'], list)
+    assert all(e.get('message') for e in rsp_body['errors'])
+
+
+def test_should_5():
+    # given
+    e_message = 'Unhandled exception'
+
+    # and
+    @aws_api_gateway()
+    def any_lambda_handler(_, __):
+        raise Exception(e_message)
+
+    # when
+    response = any_lambda_handler(None, None)
+
+    # then
+    assert_common_conditions(response)
+    assert response['statusCode'] == 500
+
+    # and
+    rsp_body = json.loads(response['body'])
+    assert rsp_body.get('errors') and isinstance(rsp_body['errors'], list)
+    assert any(
+        e_message in e.get('message')
+        for e in rsp_body['errors']
+    )
