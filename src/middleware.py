@@ -12,10 +12,13 @@ def aws_api_gateway(
 ):
     def middleware(lambda_handler: Callable[[dict, Any], dict]):
 
-        def wrapper(event: dict, _):
+        def wrapper(event: dict, context):
 
             # Lambda authorizer
             if auth_context_handler:
+                if not isinstance(event, dict):
+                    return auth_context_on_error_handler(NotImplementedError('Middleware only supports event as dict'))
+
                 authorizer_context = (event.get('requestContext') or {}).get('authorizer')
                 try:
                     auth_context_handler(authorizer_context)
@@ -26,12 +29,13 @@ def aws_api_gateway(
             if payload_parser:
                 try:
                     payload = payload_parser(event.get('body'))
+                    event = {**event, "middleware": {"body": payload}}
 
                 except Exception as e:
                     return payload_parser_on_error_handler(e)
 
             try:
-                response = lambda_handler(event, _)
+                response = lambda_handler(event, context)
                 return h.to_response_api_gw(response)
             except Exception as e:
                 return {
