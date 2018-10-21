@@ -1,14 +1,14 @@
 import json
 from typing import Callable, Any
 
-from src import defaults as d
+from src import handlers as h
 
 
 def aws_api_gateway(
         auth_context_handler: Callable[[dict], None] = None,
-        auth_context_on_error_handler: Callable[[Exception], dict] = d.auth_context_on_error_handler,
+        auth_context_on_error_handler: Callable[[Exception], dict] = h.auth_context_on_error,
         payload_parser: Callable[[dict], dict] = None,
-        payload_parser_on_error_handler: Callable[[Exception], dict] = d.payload_parser_on_error_handler
+        payload_parser_on_error_handler: Callable[[Exception], dict] = h.payload_parser_on_error
 ):
     def middleware(lambda_handler: Callable[[dict, Any], dict]):
 
@@ -26,11 +26,13 @@ def aws_api_gateway(
             if payload_parser:
                 try:
                     payload = payload_parser(event.get('body'))
+
                 except Exception as e:
                     return payload_parser_on_error_handler(e)
 
             try:
-                return lambda_handler(event, _)
+                response = lambda_handler(event, _)
+                return h.to_response_api_gw(response)
             except Exception as e:
                 return {
                     "statusCode": 500,
