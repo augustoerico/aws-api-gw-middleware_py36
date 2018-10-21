@@ -1,4 +1,4 @@
-import json
+import simplejson as json
 
 
 def auth_context_on_error(e: Exception) -> dict:
