@@ -1,18 +1,18 @@
 import json
 from typing import Callable, Any
 
-from src import handlers as h
+from aws_apigw_toolbox import handlers as h
 
 
-def aws_api_gateway(
+def middleware(
         auth_context_handler: Callable[[dict], None] = None,
         auth_context_on_error_handler: Callable[[Exception], dict] = h.auth_context_on_error,
         payload_parser: Callable[[dict], dict] = None,
         payload_parser_on_error_handler: Callable[[Exception], dict] = h.payload_parser_on_error
 ):
-    def middleware(lambda_handler: Callable[[dict, Any], dict]):
+    def decorator(lambda_handler: Callable[[dict, Any], dict]):
 
-        def wrapper(event: dict, context):
+        def lambda_handlers_wrapper(event: dict, context):
 
             # Lambda authorizer
             if auth_context_handler:
@@ -77,6 +77,6 @@ def aws_api_gateway(
                     })
                 }
 
-        return wrapper
+        return lambda_handlers_wrapper
 
-    return middleware
+    return decorator

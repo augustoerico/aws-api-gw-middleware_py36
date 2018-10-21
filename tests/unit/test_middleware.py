@@ -1,6 +1,6 @@
 import json
 
-from src.middleware import aws_api_gateway
+from aws_apigw_toolbox import api_gw_middleware
 
 
 def assert_common_conditions(response: dict) -> None:
@@ -16,7 +16,7 @@ def assert_common_conditions(response: dict) -> None:
 
 def test_1():
     # given
-    @aws_api_gateway()
+    @api_gw_middleware()
     def any_lambda_handler(_, __):
         return {
             "statusCode": 200
@@ -38,7 +38,7 @@ def test_2():
     }
 
     # and
-    @aws_api_gateway()
+    @api_gw_middleware()
     def any_lambda_handler(_, __):
         return {
             "statusCode": 200,
@@ -64,7 +64,7 @@ def test_3():
     }
 
     # and
-    @aws_api_gateway()
+    @api_gw_middleware()
     def any_lambda_handler(_, __):
         return {
             "statusCode": 200,
@@ -91,7 +91,7 @@ def test_4():
     }
 
     # and
-    @aws_api_gateway()
+    @api_gw_middleware()
     def any_lambda_handler(_, __):
         return {
             "statusCode": 200,
@@ -115,7 +115,7 @@ def test_5():
     e_message = 'Unhandled exception'
 
     # and
-    @aws_api_gateway()
+    @api_gw_middleware()
     def any_lambda_handler(_, __):
         raise Exception(e_message)
 
@@ -146,7 +146,7 @@ def test_6():
         return {**data, "attr0": "value0"}
 
     # and
-    @aws_api_gateway(
+    @api_gw_middleware(
         auth_context_handler=auth_handler,
         payload_parser=parser
     )
@@ -183,7 +183,7 @@ def test_7():
         raise Exception("Unhandled exception in auth")
 
     # and
-    @aws_api_gateway(
+    @api_gw_middleware(
         auth_context_handler=auth_handler
     )
     def any_lambda_handler(_, __):
@@ -206,7 +206,7 @@ def test_8():
         raise Exception("Unhandled exception in parser")
 
     # and
-    @aws_api_gateway(
+    @api_gw_middleware(
         payload_parser=parser
     )
     def any_lambda_handler(_, __):
@@ -237,7 +237,7 @@ def test_9():
         }
 
     # and
-    @aws_api_gateway(
+    @api_gw_middleware(
         payload_parser=parser,
         payload_parser_on_error_handler=on_error
     )
@@ -266,7 +266,7 @@ def test_10():
         }
 
     # and
-    @aws_api_gateway(
+    @api_gw_middleware(
         auth_context_handler=auth_handler,
         auth_context_on_error_handler=on_error
     )
@@ -294,7 +294,7 @@ def test_11():
         raise Exception('Unexpected error on auth error handler')
 
     # and
-    @aws_api_gateway(
+    @api_gw_middleware(
         auth_context_handler=auth_handler,
         auth_context_on_error_handler=on_error
     )
@@ -321,7 +321,7 @@ def test_12():
         raise Exception('Unexpected error on parser error handler')
 
     # and
-    @aws_api_gateway(
+    @api_gw_middleware(
         payload_parser=parser,
         payload_parser_on_error_handler=on_error
     )
