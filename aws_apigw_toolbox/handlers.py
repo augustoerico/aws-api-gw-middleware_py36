@@ -27,7 +27,7 @@ def to_response_api_gw(r: dict) -> dict:
                     try:
                         body_str = json.dumps(r['body'])
                     except Exception as e:
-                        return {
+                        response = {
                             "statusCode": 500,
                             "body": json.dumps({
                                 "errors": [{
@@ -37,19 +37,22 @@ def to_response_api_gw(r: dict) -> dict:
                             })
                         }
                     else:
-                        return {
+                        response = {
                             "statusCode": r['statusCode'],
-                            "body": body_str
+                            "body": body_str,
+                            "headers": r['headers'] or {}
                         }
                 elif isinstance(r['body'], str):
-                    return {k: v for k, v in r.items() if k in ['statusCode', 'body']}
+                    response = {k: v for k, v in r.items() if k in ['statusCode', 'body', 'headers']}
                 else:
-                    return {
+                    response = {
                         "statusCode": r['statusCode'],
                         "body": str(r['body'])
                     }
             else:
-                return {k: v for k, v in r.items() if k in ['statusCode', 'body']}
+                response = {k: v for k, v in r.items() if k in ['statusCode', 'body', 'headers']}
+
+            return response
 
     message = 'Invalid lambda return. Return "statusCode" (int) and "body" (str or dict, optional)'
     return {
