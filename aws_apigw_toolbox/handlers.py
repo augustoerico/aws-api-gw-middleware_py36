@@ -1,12 +1,18 @@
 import simplejson as json
 
+headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Credentials": True
+}
+
 
 def auth_context_on_error(e: Exception) -> dict:
     return {
         "statusCode": 401,
         "body": json.dumps({
             "errors": [{"message": "Unauthorized.\n" + str(e)}]
-        })
+        }),
+        "headers": headers
     }
 
 
@@ -15,7 +21,8 @@ def payload_parser_on_error(e: Exception) -> dict:
         "statusCode": 400,
         "body": json.dumps({
             "errors": [{"message": "Bad request.\n" + str(e)}]
-        })
+        }),
+        "headers": headers
     }
 
 
@@ -34,20 +41,25 @@ def to_response_api_gw(r: dict) -> dict:
                                     "message": "Error while returning response. Return body as string instead.\n"
                                                + str(e)
                                 }]
-                            })
+                            }),
+                            "headers": headers
                         }
                     else:
                         response = {
                             "statusCode": r['statusCode'],
                             "body": body_str,
-                            "headers": r['headers'] or {}
+                            "headers": {
+                                **headers,
+                                **(r.get('headers') or {})
+                            }
                         }
                 elif isinstance(r['body'], str):
                     response = {k: v for k, v in r.items() if k in ['statusCode', 'body', 'headers']}
                 else:
                     response = {
                         "statusCode": r['statusCode'],
-                        "body": str(r['body'])
+                        "body": str(r['body']),
+                        "headers": headers
                     }
             else:
                 response = {k: v for k, v in r.items() if k in ['statusCode', 'body', 'headers']}
@@ -57,5 +69,6 @@ def to_response_api_gw(r: dict) -> dict:
     message = 'Invalid lambda return. Return "statusCode" (int) and "body" (str or dict, optional)'
     return {
         "statusCode": 500,
-        "body": json.dumps({"errors": [{"message": message}]})
+        "body": json.dumps({"errors": [{"message": message}]}),
+        "headers": headers
     }
