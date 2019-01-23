@@ -27,12 +27,23 @@ def payload_parser_on_error(e: Exception) -> dict:
 
 
 def to_response_api_gw(r: dict) -> dict:
+
     if r and isinstance(r, dict):
+
+        headers_ = {
+            **headers,
+            **(r.get('headers') or {})
+        }
+
         if r.get('statusCode') and isinstance(r['statusCode'], int):
+
             if r.get('body'):
                 if isinstance(r['body'], dict):
                     try:
-                        body_str = json.dumps(r['body'])
+                        response = {
+                            "statusCode": r['statusCode'],
+                            "body": json.dumps(r['body'])
+                        }
                     except Exception as e:
                         response = {
                             "statusCode": 500,
@@ -41,34 +52,38 @@ def to_response_api_gw(r: dict) -> dict:
                                     "message": "Error while returning response. Return body as string instead.\n"
                                                + str(e)
                                 }]
-                            }),
-                            "headers": headers
+                            })
                         }
-                    else:
-                        response = {
-                            "statusCode": r['statusCode'],
-                            "body": body_str,
-                            "headers": {
-                                **headers,
-                                **(r.get('headers') or {})
-                            }
-                        }
-                elif isinstance(r['body'], str):
-                    response = {k: v for k, v in r.items() if k in ['statusCode', 'body', 'headers']}
+
                 else:
                     response = {
                         "statusCode": r['statusCode'],
-                        "body": str(r['body']),
-                        "headers": headers
+                        "body": str(r['body'])
                     }
             else:
-                response = {k: v for k, v in r.items() if k in ['statusCode', 'body', 'headers']}
+                response = {
+                    "statusCode": r['statusCode']
+                }
 
-            return response
+            response = {
+                **response,
+                "headers": headers_
+            }
 
-    message = 'Invalid lambda return. Return "statusCode" (int) and "body" (str or dict, optional)'
-    return {
-        "statusCode": 500,
-        "body": json.dumps({"errors": [{"message": message}]}),
-        "headers": headers
-    }
+        else:
+            message = 'Invalid lambda return. Should return "statusCode" (int) and "body" (str or dict, optional)'
+            response = {
+                "statusCode": 500,
+                "body": json.dumps({"errors": [{"message": message}]}),
+                "headers": headers_
+            }
+
+    else:
+        message = f'Invalid lambda return. Should return `dict`, instead of {type(r)}'
+        response = {
+            "statusCode": 500,
+            "body": json.dumps({"errors": [{"message": message}]}),
+            "headers": headers
+        }
+
+    return response
